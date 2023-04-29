@@ -31,6 +31,10 @@ import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import oshi.SystemInfo;
+import oshi.hardware.CentralProcessor;
+import oshi.hardware.GlobalMemory;
+import oshi.hardware.HardwareAbstractionLayer;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -40,7 +44,7 @@ public class Lavamark {
     private static final Logger log = LoggerFactory.getLogger(Lavamark.class);
 
     static final AudioPlayerManager PLAYER_MANAGER = new DefaultAudioPlayerManager();
-    private static final String DEFAULT_PLAYLIST = "https://www.youtube.com/watch?v=dcGKVnEbi8E&list=PLdp3KzF76wW-O0C6sP8iFPvwZf6HwIZdh";
+    private static final String DEFAULT_PLAYLIST = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
     private static final String DEFAULT_OPUS = "https://youtu.be/dcGKVnEbi8E";
     private static final long INTERVAL = 2 * 1000;
     private static final long STEP_SIZE = 20;
@@ -81,13 +85,29 @@ public class Lavamark {
 
     private static void doLoop() throws InterruptedException {
         //noinspection InfiniteLoopStatement
+
+        SystemInfo si = new SystemInfo();
+        HardwareAbstractionLayer hal = si.getHardware();
+        CentralProcessor cpu = hal.getProcessor();
+        GlobalMemory memory = hal.getMemory();
+
+
+        long lastestMemory = memory.getTotal() - memory.getAvailable();
         while (true) {
             spawnPlayers();
 
             AudioConsumer.Results results = AudioConsumer.getResults();
-            log.info("Players: " + players.size() + ", Null frames: " + results.getLossPercentString());
 
-            if(results.getEndReason() != AudioConsumer.EndReason.NONE) {
+            log.info("Players: " + players.size() + ", Null frames: " + results.getLossPercentString());
+            log.info("THREADS: " + Thread.activeCount());
+            log.info("CPU: " + String.valueOf(cpu.getSystemCpuLoad(50)));
+            log.info("MEMORY: " + (memory.getTotal() - memory.getAvailable()) / 1024 / 1024 + " MB");
+            log.info("MEMORY DIFF:" + ((memory.getTotal() - memory.getAvailable()) - lastestMemory) / 1024 / 1024 + " MB");
+            lastestMemory = memory.getTotal() - memory.getAvailable();
+            log.info("***********************************************************");
+
+
+            if (results.getEndReason() != AudioConsumer.EndReason.NONE) {
                 log.info("Benchmark ended. Reason: " + results.getEndReason());
                 break;
             }
